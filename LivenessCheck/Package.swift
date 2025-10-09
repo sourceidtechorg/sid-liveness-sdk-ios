@@ -26,7 +26,10 @@ let package = Package(
             dependencies: [
                 .product(name: "FaceLiveness", package: "amplify-ui-swift-liveness")
             ],
-            path: "Sources/LivenessCheck"
+            path: "Sources/LivenessCheck",
+            resources: [
+                            .process("Resources")
+                        ]
         )
     ]
 )

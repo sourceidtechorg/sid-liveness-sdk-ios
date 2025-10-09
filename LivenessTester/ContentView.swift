@@ -25,7 +25,7 @@ struct ContentView: View {
         .sheet(isPresented: $showLiveness) {
             // 👇 Invoke your SDK’s public API instead of FaceLivenessScreen directly
             LivenessSDK.start(
-                sessionId: "3d87a291-4fba-4065-a0a8-086920fb4618",
+                sessionId: "9b0c04d7-3b0a-416b-9a65-dff29d404199",
                 region: "us-east-1",
                 config: LivenessUIConfig(
                     hideBranding: false,
