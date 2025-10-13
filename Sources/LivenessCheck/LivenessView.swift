@@ -62,7 +62,7 @@ public struct FaceLivenessScreen: View {
                             .font(.headline)
                             .foregroundColor(config.getPrimaryColor().opacity(0.6))
                         
-                        Image(config.theme.lowercased() == "dark" ? "sid_logo_dark" : "sid_logo_light")
+                        Image(config.theme.lowercased() == "dark" ? "sid_logo_dark" : "sid_logo_light", bundle: .module)
                             .resizable()
                             .scaledToFit()
                             .frame(height: 24)

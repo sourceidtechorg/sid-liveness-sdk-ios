@@ -15,7 +15,10 @@ public struct LivenessSDK {
         config: LivenessUIConfig = .init(),
         onComplete: @escaping (LivenessResult) -> Void
     ) -> some View {
-        LivenessHostView(
+        // ✅ Ensure Amplify is configured internally
+              AmplifyInitializer.configureIfNeeded()
+              
+        return LivenessHostView(
             sessionId: sessionId,
             region: region,
             config: config,
