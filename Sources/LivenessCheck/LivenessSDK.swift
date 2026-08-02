@@ -8,26 +8,39 @@
 import SwiftUI
 
 public struct LivenessSDK {
-    @MainActor @available(macOS 10.15.0, *)
+    /// Entry point for the SourceID liveness check.
+    ///
+    /// Returns a SwiftUI view hosting the AWS Face Liveness detector for the
+    /// given session. The `onComplete` callback fires exactly once with the
+    /// outcome. If Amplify cannot be configured, the callback receives the
+    /// failure immediately and an empty view is returned.
+    @MainActor
     public static func start(
         sessionId: String,
         region: String,
         config: LivenessUIConfig = .init(),
         onComplete: @escaping (LivenessResult) -> Void
     ) -> some View {
-        // ✅ Ensure Amplify is configured internally
-              AmplifyInitializer.configureIfNeeded()
-              
-        return LivenessHostView(
-            sessionId: sessionId,
-            region: region,
-            config: config,
-            onComplete: onComplete
+        do {
+            try AmplifyInitializer.configureIfNeeded()
+        } catch {
+            DispatchQueue.main.async {
+                onComplete(.failure(error))
+            }
+            return AnyView(EmptyView())
+        }
+
+        return AnyView(
+            LivenessHostView(
+                sessionId: sessionId,
+                region: region,
+                config: config,
+                onComplete: onComplete
+            )
         )
     }
 }
 
-@available(macOS 10.15, *)
 private struct LivenessHostView: View {
     let sessionId: String
     let region: String

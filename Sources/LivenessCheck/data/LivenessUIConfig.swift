@@ -25,7 +25,6 @@ public struct LivenessUIConfig {
         self.primaryColorHex = primaryColorHex
     }
 
-    @available(macOS 10.15, *)
     public func getPrimaryColor() -> Color {
         if let hex = primaryColorHex, let color = Color(hex: hex) {
             return color

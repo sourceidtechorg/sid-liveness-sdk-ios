@@ -6,7 +6,6 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [
         .iOS(.v14),
-        .macOS(.v12)
     ],
     products: [
         .library(
@@ -19,14 +18,24 @@ let package = Package(
             url: "https://github.com/aws-amplify/amplify-ui-swift-liveness.git",
             from: "1.4.2"
         ),
+        // Force a newer version of swift-log that's compatible with Swift 5.9
+              .package(
+                  url: "https://github.com/apple/swift-log.git",
+                  from: "1.6.4" // This version fixes the @inlinable issue
+              ),
     ],
     targets: [
         .target(
             name: "LivenessCheck",
             dependencies: [
-                .product(name: "FaceLiveness", package: "amplify-ui-swift-liveness")
+                .product(name: "FaceLiveness", package: "amplify-ui-swift-liveness"),
+                .product(name: "Logging", package: "swift-log"),
+
             ],
-            path: "Sources/LivenessCheck"
+            path: "Sources/LivenessCheck",
+            resources: [
+                .copy("Resources/amplifyconfiguration.json")
+            ]
         )
     ]
 )
