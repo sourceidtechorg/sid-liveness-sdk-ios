@@ -10,5 +10,5 @@ import Foundation
 
 public enum LivenessResult {
     case success
-    case failure(Error)
+    case failure(LivenessError)
 }

@@ -87,18 +87,49 @@ public struct FaceLivenessScreen: View {
         config.theme.lowercased() == "dark" ? .black : .white
     }
 
-    /// `FaceLivenessDetectionError` renders poorly through
-    /// `localizedDescription`; rebuild a readable message from its parts and
-    /// map the detector's own cancellation to the documented error.
-    private static func mapDetectorError(_ error: Error) -> Error {
-        guard let detectorError = error as? FaceLivenessDetectionError else { return error }
+    /// Maps the AWS detector failure to a [LivenessError] with a friendly
+    /// user message per failure kind and the full technical detail preserved
+    /// for logging (aligned with the Android SDK's messages).
+    private static func mapDetectorError(_ error: Error) -> LivenessError {
+        guard let detectorError = error as? FaceLivenessDetectionError else {
+            return LivenessError(
+                code: LivenessError.detectorFailedCode,
+                userMessage: "Something went wrong during the liveness check. Please check your connection and try again.",
+                debugMessage: "\(type(of: error)): \(error.localizedDescription)"
+            )
+        }
+
         if detectorError == .userCancelled {
-            return LivenessCheckError.cancelled
+            return LivenessError.cancelled()
         }
-        var message = detectorError.message
+
+        let userMessage: String
+        switch detectorError {
+        case .sessionNotFound:
+            userMessage = "This verification session is invalid or was already used. Please start a new check."
+        case .sessionTimedOut:
+            userMessage = "The verification session timed out. Please start a new check."
+        case .faceInOvalMatchExceededTimeLimitError:
+            userMessage = "We couldn't capture your face in time. Find a well-lit spot and try again."
+        case .cameraPermissionDenied:
+            userMessage = "Camera access is required for the liveness check. Please allow camera access in Settings and try again."
+        case .cameraNotAvailable:
+            userMessage = "The camera could not be started. Close other apps using the camera and try again."
+        case .accessDenied:
+            userMessage = "The verification service rejected the request. Please try again later."
+        default:
+            userMessage = "Something went wrong during the liveness check. Please check your connection and try again."
+        }
+
+        var debugMessage = detectorError.message
         if !detectorError.recoverySuggestion.isEmpty {
-            message += " — \(detectorError.recoverySuggestion)"
+            debugMessage += " — \(detectorError.recoverySuggestion)"
         }
-        return LivenessCheckError.detectorFailure(message)
+
+        return LivenessError(
+            code: LivenessError.detectorFailedCode,
+            userMessage: userMessage,
+            debugMessage: debugMessage
+        )
     }
 }

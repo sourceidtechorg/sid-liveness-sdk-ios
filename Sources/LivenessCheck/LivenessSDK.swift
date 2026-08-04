@@ -6,6 +6,13 @@
 //
 
 import SwiftUI
+import os
+
+extension Logger {
+    /// Every SDK failure is logged here; filter with subsystem
+    /// `tech.sourceid.LivenessCheck` in Xcode's console or Console.app.
+    static let livenessSDK = Logger(subsystem: "tech.sourceid.LivenessCheck", category: "LivenessSDK")
+}
 
 public struct LivenessSDK {
     /// Session status required before the capture flow is allowed to start.
@@ -23,6 +30,11 @@ public struct LivenessSDK {
     /// `CREATED`; any other status (already used, expired, ...) is reported
     /// through `onComplete` without opening the camera. When `apiConfig` is
     /// nil the check is skipped and the flow starts directly.
+    ///
+    /// Failures arrive as `LivenessError`: show `userMessage` to the user,
+    /// log `debugMessage` (the SDK already logs it under the
+    /// `tech.sourceid.LivenessCheck` subsystem), branch on `code`
+    /// programmatically.
     @MainActor
     public static func start(
         sessionId: String,
@@ -31,9 +43,21 @@ public struct LivenessSDK {
         apiConfig: LivenessApiConfig? = nil,
         onComplete: @escaping (LivenessResult) -> Void
     ) -> some View {
+        // Central logging: every failure is recorded before the caller sees it.
+        let complete: (LivenessResult) -> Void = { result in
+            if case .failure(let error) = result {
+                Logger.livenessSDK.error("Liveness failed \(error.description, privacy: .public)")
+            }
+            onComplete(result)
+        }
+
         guard !sessionId.trimmingCharacters(in: .whitespaces).isEmpty else {
             DispatchQueue.main.async {
-                onComplete(.failure(LivenessCheckError.invalidArguments("sessionId is required")))
+                complete(.failure(LivenessError(
+                    code: LivenessError.invalidArgumentsCode,
+                    userMessage: "Verification could not start. Please go back and try again.",
+                    debugMessage: "start() called with a blank sessionId"
+                )))
             }
             return AnyView(EmptyView())
         }
@@ -42,7 +66,11 @@ public struct LivenessSDK {
             try AmplifyInitializer.configureIfNeeded()
         } catch {
             DispatchQueue.main.async {
-                onComplete(.failure(error))
+                complete(.failure(LivenessError(
+                    code: LivenessError.configFailedCode,
+                    userMessage: "The verification service could not start. Please try again later.",
+                    debugMessage: "Amplify initialization failed: \(error.localizedDescription)"
+                )))
             }
             return AnyView(EmptyView())
         }
@@ -53,7 +81,7 @@ public struct LivenessSDK {
                     sessionId: sessionId,
                     region: region,
                     config: config,
-                    onComplete: onComplete
+                    onComplete: complete
                 )
             )
         }
@@ -64,7 +92,7 @@ public struct LivenessSDK {
                 region: region,
                 config: config,
                 apiConfig: apiConfig,
-                onComplete: onComplete
+                onComplete: complete
             )
         )
     }
@@ -103,28 +131,35 @@ private struct LivenessGateView: View {
             guard !checkStarted else { return }
             checkStarted = true
             Task {
-                do {
-                    let status = try await SessionStatusChecker.fetchStatus(
-                        apiConfig: apiConfig,
-                        sessionId: sessionId
-                    )
-                    await MainActor.run {
+                let outcome = await SessionStatusChecker.fetchStatus(
+                    apiConfig: apiConfig,
+                    sessionId: sessionId
+                )
+                await MainActor.run {
+                    switch outcome {
+                    case .status(let status):
                         if status.caseInsensitiveCompare(LivenessSDK.statusCreated) == .orderedSame {
                             allowed = true
                         } else {
-                            onComplete(.failure(LivenessCheckError.sessionNotUsable(
-                                "Session cannot be used (status: \(status)). Generate a new session."
+                            onComplete(.failure(LivenessError(
+                                code: LivenessError.sessionNotUsableCode,
+                                userMessage: "This verification session has already been used or has expired. Please start a new check.",
+                                debugMessage: "Gateway reported session status \"\(status)\"; launch requires \"\(LivenessSDK.statusCreated)\""
                             )))
                         }
-                    }
-                } catch {
-                    // The gateway also 400s for sessions that were already
-                    // run, so a failed check means "don't open the camera".
-                    let detail = (error as? LivenessCheckError)?.errorDescription
-                        ?? error.localizedDescription
-                    await MainActor.run {
-                        onComplete(.failure(LivenessCheckError.sessionNotUsable(
-                            "Session not usable (\(detail)). Generate a new session and try again."
+                    case .gatewayRejected(let httpCode, let gatewayMessage):
+                        // The gateway also 400s for sessions that were already
+                        // run, so a rejection means "don't open the camera".
+                        onComplete(.failure(LivenessError(
+                            code: LivenessError.sessionNotUsableCode,
+                            userMessage: "This verification session has already been used or has expired. Please start a new check.",
+                            debugMessage: "Gateway rejected the status check: HTTP \(httpCode) — \(gatewayMessage ?? "no message")"
+                        )))
+                    case .unreachable(let detail):
+                        onComplete(.failure(LivenessError(
+                            code: LivenessError.statusCheckFailedCode,
+                            userMessage: "We couldn't verify your session. Please check your internet connection and try again.",
+                            debugMessage: "Status check failed before reaching a verdict: \(detail)"
                         )))
                     }
                 }

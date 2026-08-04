@@ -34,11 +34,11 @@ In Xcode: **File ▸ Add Package Dependencies…** and enter:
 https://github.com/EQua-Dev/ios-single-liveness-expo.git
 ```
 
-selecting **Up to Next Major Version** from `1.5.0`. Or in `Package.swift`:
+selecting **Up to Next Major Version** from `1.6.0`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.5.0")
+    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.6.0")
 ],
 targets: [
     .target(
@@ -132,8 +132,9 @@ LivenessSDK.start(
         bearerToken: freshUserToken  // Authorization header; tokens expire
     )
 ) { result in
-    // .failure(LivenessCheckError.sessionNotUsable(...)) when the check
-    // blocks the launch, e.g. "Session cannot be used (status: COMPLETED)."
+    // When the check blocks the launch: .failure with code SESSION_NOT_USABLE,
+    // userMessage "This verification session has already been used or has
+    // expired. Please start a new check."
 }
 ```
 
@@ -173,18 +174,31 @@ Returns a SwiftUI view hosting the liveness detector. `region` defaults to
 | Result | Meaning |
 | --- | --- |
 | `.success` | The capture flow completed. Verify the session result server-side. |
-| `.failure(Error)` | See the error contract below. |
+| `.failure(LivenessError)` | See the error contract below. |
 
-Failures are reported as `LivenessCheckError` where possible (aligned with the
-Android SDK's messages):
+### Error contract (`LivenessError`)
 
-| Error | Meaning |
-| --- | --- |
-| `.cancelled` — "Liveness check cancelled" | The user backed out of the flow before completing it. |
-| `.invalidArguments` — "sessionId is required" | `start` was called with a blank session id. |
-| `.sessionNotUsable` — "Session cannot be used (status: X)…" | The pre-flight check blocked the launch (used/expired session, or the gateway could not confirm it). |
-| `.detectorFailure` — message + recovery suggestion | Propagated from the AWS Face Liveness detector (network, expired session, ...). |
-| Any other `Error` | Amplify configuration failed. |
+`.failure` carries a structured `LivenessError` that separates what you show
+the user from what you log (identical to the Android SDK's contract):
+
+* **`userMessage`** — friendly, actionable text safe to show end users (also what `localizedDescription` returns).
+* **`debugMessage`** — full technical detail (detector error type, gateway HTTP code, cause). The SDK also logs every failure under the `tech.sourceid.LivenessCheck` subsystem — filter for it in Xcode's console or Console.app.
+* **`code`** — stable identifier for programmatic handling (plus the `error.isCancelled` shortcut).
+
+```swift
+case .failure(let error):
+    print("Liveness failed \(error)")     // "[CODE] debug detail"
+    alertMessage = error.userMessage      // friendly text
+```
+
+| Code | Typical user message | Meaning |
+| --- | --- | --- |
+| `CANCELLED` | "Liveness check cancelled" | The user backed out before completing the flow. |
+| `INVALID_ARGUMENTS` | "Verification could not start…" | `start` was called with a blank session id. |
+| `SESSION_NOT_USABLE` | "This verification session has already been used or has expired…" | Pre-flight check: the status was not `CREATED`, or the gateway rejected the session (it also 400s for already-run sessions). |
+| `STATUS_CHECK_FAILED` | "We couldn't verify your session…" | The pre-flight check couldn't reach the gateway (network/timeout). |
+| `CONFIG_FAILED` | "The verification service could not start…" | AWS Amplify could not be configured. |
+| `DETECTOR_FAILED` | Varies by cause — invalid/expired session, capture timeout, camera unavailable, service rejection | AWS Face Liveness detector failure; `debugMessage` carries the exact message and recovery suggestion. |
 
 ### `LivenessUIConfig`
 
@@ -214,8 +228,8 @@ Releases are consumed straight from git tags via Swift Package Manager:
 ```bash
 # verify it builds first
 xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' build
-git tag 1.5.0
-git push origin 1.5.0                # or the appropriate remote
+git tag 1.6.0
+git push origin 1.6.0                # or the appropriate remote
 ```
 
 ---
