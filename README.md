@@ -34,11 +34,11 @@ In Xcode: **File ▸ Add Package Dependencies…** and enter:
 https://github.com/EQua-Dev/ios-single-liveness-expo.git
 ```
 
-selecting **Up to Next Major Version** from `1.4.0`. Or in `Package.swift`:
+selecting **Up to Next Major Version** from `1.5.0`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.4.0")
+    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.5.0")
 ],
 targets: [
     .target(
@@ -91,7 +91,7 @@ struct VerificationScreen: View {
             .fullScreenCover(isPresented: $showLiveness) {
                 LivenessSDK.start(
                     sessionId: sessionIdFromYourBackend,
-                    region: "us-east-1",
+                    // region defaults to "us-east-1"
                     config: LivenessUIConfig(
                         hideBranding: false,
                         customTitle: "Face Verification",
@@ -114,6 +114,33 @@ struct VerificationScreen: View {
 }
 ```
 
+### Pre-flight session status check (optional)
+
+Liveness sessions are single-use and short-lived. To avoid opening the camera
+for a session that was already used or has expired, pass a `LivenessApiConfig`
+— the SDK then asks the SourceID gateway for the session's status first and
+only starts the capture flow when the status is `CREATED` (a themed spinner is
+shown while the check runs):
+
+```swift
+LivenessSDK.start(
+    sessionId: sessionIdFromYourBackend,
+    config: LivenessUIConfig(theme: "dark"),
+    apiConfig: LivenessApiConfig(
+        baseUrl: "https://<your-gateway-host>/v1/api",
+        apiKey: yourApiKey,          // x-api-key header
+        bearerToken: freshUserToken  // Authorization header; tokens expire
+    )
+) { result in
+    // .failure(LivenessCheckError.sessionNotUsable(...)) when the check
+    // blocks the launch, e.g. "Session cannot be used (status: COMPLETED)."
+}
+```
+
+The check calls `POST {baseUrl}/liveness/liveness-result` with the session id
+as the `reference`. Omit `apiConfig` to skip the check and start directly
+(previous behaviour).
+
 ### UIKit
 
 ```swift
@@ -122,8 +149,7 @@ import SwiftUI
 import LivenessCheck
 
 let livenessView = LivenessSDK.start(
-    sessionId: sessionIdFromYourBackend,
-    region: "us-east-1"
+    sessionId: sessionIdFromYourBackend
 ) { [weak self] result in
     self?.presentedViewController?.dismiss(animated: true)
     // Handle result…
@@ -138,14 +164,27 @@ present(host, animated: true)
 
 ## API
 
-### `LivenessSDK.start(sessionId:region:config:onComplete:) -> some View`
+### `LivenessSDK.start(sessionId:region:config:apiConfig:onComplete:) -> some View`
 
-Returns a SwiftUI view hosting the liveness detector. `onComplete` fires exactly once:
+Returns a SwiftUI view hosting the liveness detector. `region` defaults to
+`"us-east-1"`; `apiConfig` (optional) enables the pre-flight status check.
+`onComplete` fires exactly once:
 
 | Result | Meaning |
 | --- | --- |
 | `.success` | The capture flow completed. Verify the session result server-side. |
-| `.failure(Error)` | Amplify configuration failed, the user cancelled, the session expired, or a camera/network error occurred. |
+| `.failure(Error)` | See the error contract below. |
+
+Failures are reported as `LivenessCheckError` where possible (aligned with the
+Android SDK's messages):
+
+| Error | Meaning |
+| --- | --- |
+| `.cancelled` — "Liveness check cancelled" | The user backed out of the flow before completing it. |
+| `.invalidArguments` — "sessionId is required" | `start` was called with a blank session id. |
+| `.sessionNotUsable` — "Session cannot be used (status: X)…" | The pre-flight check blocked the launch (used/expired session, or the gateway could not confirm it). |
+| `.detectorFailure` — message + recovery suggestion | Propagated from the AWS Face Liveness detector (network, expired session, ...). |
+| Any other `Error` | Amplify configuration failed. |
 
 ### `LivenessUIConfig`
 
@@ -175,8 +214,8 @@ Releases are consumed straight from git tags via Swift Package Manager:
 ```bash
 # verify it builds first
 xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' build
-git tag 1.4.0
-git push origin 1.4.0                # or the appropriate remote
+git tag 1.5.0
+git push origin 1.5.0                # or the appropriate remote
 ```
 
 ---

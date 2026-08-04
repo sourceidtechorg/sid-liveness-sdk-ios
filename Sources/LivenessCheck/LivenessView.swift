@@ -15,7 +15,7 @@ public struct FaceLivenessScreen: View {
 
     public init(
         sessionID: String,
-        region: String,
+        region: String = "us-east-1",
         config: LivenessUIConfig,
         isPresented: Binding<Bool>,
         onCompletion: @escaping (LivenessResult) -> Void
@@ -27,7 +27,17 @@ public struct FaceLivenessScreen: View {
         self.onCompletion = onCompletion
     }
 
+    @State private var showInstructions = true
+
     public var body: some View {
+        if showInstructions {
+            LivenessStartView(config: config) { showInstructions = false }
+        } else {
+            captureView
+        }
+    }
+
+    private var captureView: some View {
         VStack(spacing: 0) {
             if let title = config.customTitle {
                 Text(title)
@@ -41,13 +51,15 @@ public struct FaceLivenessScreen: View {
             FaceLivenessDetectorView(
                 sessionID: sessionID,
                 region: region,
+                // The SDK shows its own instruction page first.
+                disableStartView: true,
                 isPresented: $isPresented
             ) { result in
                 switch result {
                 case .success:
                     onCompletion(.success)
                 case .failure(let err):
-                    onCompletion(.failure(err))
+                    onCompletion(.failure(Self.mapDetectorError(err)))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -73,5 +85,20 @@ public struct FaceLivenessScreen: View {
 
     private var backgroundColor: Color {
         config.theme.lowercased() == "dark" ? .black : .white
+    }
+
+    /// `FaceLivenessDetectionError` renders poorly through
+    /// `localizedDescription`; rebuild a readable message from its parts and
+    /// map the detector's own cancellation to the documented error.
+    private static func mapDetectorError(_ error: Error) -> Error {
+        guard let detectorError = error as? FaceLivenessDetectionError else { return error }
+        if detectorError == .userCancelled {
+            return LivenessCheckError.cancelled
+        }
+        var message = detectorError.message
+        if !detectorError.recoverySuggestion.isEmpty {
+            message += " — \(detectorError.recoverySuggestion)"
+        }
+        return LivenessCheckError.detectorFailure(message)
     }
 }
