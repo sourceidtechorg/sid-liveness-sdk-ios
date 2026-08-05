@@ -34,11 +34,11 @@ In Xcode: **File ▸ Add Package Dependencies…** and enter:
 https://github.com/EQua-Dev/ios-single-liveness-expo.git
 ```
 
-selecting **Up to Next Major Version** from `1.7.0`. Or in `Package.swift`:
+selecting **Up to Next Major Version** from `1.7.1`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.7.0")
+    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.7.1")
 ],
 targets: [
     .target(
@@ -240,8 +240,8 @@ Releases are consumed straight from git tags via Swift Package Manager:
 ```bash
 # verify it builds first
 xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' build
-git tag 1.7.0
-git push origin 1.7.0                # or the appropriate remote
+git tag 1.7.1
+git push origin 1.7.1                # or the appropriate remote
 ```
 
 ---
