@@ -142,6 +142,18 @@ The check calls `POST {baseUrl}/liveness/liveness-result` with the session id
 as the `reference`. Omit `apiConfig` to skip the check and start directly
 (previous behaviour).
 
+**Zero-UI gating:** passing `apiConfig` to `start` shows a brief spinner while
+the check runs (the view is already presented). To validate **before showing
+anything at all**, call `checkSession` first and only present on `nil`:
+
+```swift
+if let error = await LivenessSDK.checkSession(sessionId: sessionId, apiConfig: apiConfig) {
+    // Nothing was shown; tell the user, e.g. error.userMessage
+} else {
+    showLiveness = true   // present LivenessSDK.start(..., apiConfig: nil)
+}
+```
+
 ### UIKit
 
 ```swift

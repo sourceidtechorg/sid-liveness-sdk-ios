@@ -17,6 +17,38 @@ enum StatusCheckOutcome {
     case unreachable(detail: String)
 }
 
+extension LivenessError {
+    /// Maps a status-check outcome to the error to surface, or nil when the
+    /// session is usable (status CREATED).
+    static func from(outcome: StatusCheckOutcome) -> LivenessError? {
+        switch outcome {
+        case .status(let status):
+            if status.caseInsensitiveCompare(LivenessSDK.statusCreated) == .orderedSame {
+                return nil
+            }
+            return LivenessError(
+                code: LivenessError.sessionNotUsableCode,
+                userMessage: "This verification session has already been used or has expired. Please start a new check.",
+                debugMessage: "Gateway reported session status \"\(status)\"; launch requires \"\(LivenessSDK.statusCreated)\""
+            )
+        case .gatewayRejected(let httpCode, let gatewayMessage):
+            // The gateway also 400s for sessions that were already run, so a
+            // rejection means "don't open the camera".
+            return LivenessError(
+                code: LivenessError.sessionNotUsableCode,
+                userMessage: "This verification session has already been used or has expired. Please start a new check.",
+                debugMessage: "Gateway rejected the status check: HTTP \(httpCode) — \(gatewayMessage ?? "no message")"
+            )
+        case .unreachable(let detail):
+            return LivenessError(
+                code: LivenessError.statusCheckFailedCode,
+                userMessage: "We couldn't verify your session. Please check your internet connection and try again.",
+                debugMessage: "Status check failed before reaching a verdict: \(detail)"
+            )
+        }
+    }
+}
+
 /// Queries the gateway's `POST /liveness/liveness-result` endpoint for the
 /// status of a session. The endpoint expects the session id in the
 /// `reference` field and reports `data.status` (e.g. "CREATED") for a

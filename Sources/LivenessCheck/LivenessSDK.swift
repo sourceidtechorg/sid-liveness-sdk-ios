@@ -18,6 +18,28 @@ public struct LivenessSDK {
     /// Session status required before the capture flow is allowed to start.
     static let statusCreated = "CREATED"
 
+    /// Checks whether a session can be used (gateway status `CREATED`)
+    /// without showing any UI. Returns `nil` when the session is usable, or
+    /// the `LivenessError` to surface to the user otherwise.
+    ///
+    /// Call this before presenting the view returned by `start` when you
+    /// want nothing on screen at all for a faulty session. If you gate with
+    /// this method, pass `apiConfig: nil` to `start` to avoid re-checking.
+    public static func checkSession(
+        sessionId: String,
+        apiConfig: LivenessApiConfig
+    ) async -> LivenessError? {
+        let outcome = await SessionStatusChecker.fetchStatus(
+            apiConfig: apiConfig,
+            sessionId: sessionId
+        )
+        let error = LivenessError.from(outcome: outcome)
+        if let error {
+            Logger.livenessSDK.error("Session check failed \(error.description, privacy: .public)")
+        }
+        return error
+    }
+
     /// Entry point for the SourceID liveness check.
     ///
     /// Returns a SwiftUI view hosting the AWS Face Liveness detector for the
@@ -136,31 +158,10 @@ private struct LivenessGateView: View {
                     sessionId: sessionId
                 )
                 await MainActor.run {
-                    switch outcome {
-                    case .status(let status):
-                        if status.caseInsensitiveCompare(LivenessSDK.statusCreated) == .orderedSame {
-                            allowed = true
-                        } else {
-                            onComplete(.failure(LivenessError(
-                                code: LivenessError.sessionNotUsableCode,
-                                userMessage: "This verification session has already been used or has expired. Please start a new check.",
-                                debugMessage: "Gateway reported session status \"\(status)\"; launch requires \"\(LivenessSDK.statusCreated)\""
-                            )))
-                        }
-                    case .gatewayRejected(let httpCode, let gatewayMessage):
-                        // The gateway also 400s for sessions that were already
-                        // run, so a rejection means "don't open the camera".
-                        onComplete(.failure(LivenessError(
-                            code: LivenessError.sessionNotUsableCode,
-                            userMessage: "This verification session has already been used or has expired. Please start a new check.",
-                            debugMessage: "Gateway rejected the status check: HTTP \(httpCode) — \(gatewayMessage ?? "no message")"
-                        )))
-                    case .unreachable(let detail):
-                        onComplete(.failure(LivenessError(
-                            code: LivenessError.statusCheckFailedCode,
-                            userMessage: "We couldn't verify your session. Please check your internet connection and try again.",
-                            debugMessage: "Status check failed before reaching a verdict: \(detail)"
-                        )))
+                    if let error = LivenessError.from(outcome: outcome) {
+                        onComplete(.failure(error))
+                    } else {
+                        allowed = true
                     }
                 }
             }
