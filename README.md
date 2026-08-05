@@ -31,26 +31,26 @@ The **SourceID Liveness SDK** provides a fast, secure, and customizable way to i
 In Xcode: **File ▸ Add Package Dependencies…** and enter:
 
 ```
-https://github.com/EQua-Dev/ios-single-liveness-expo.git
+https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git
 ```
 
 selecting **Up to Next Major Version** from `1.7.1`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.7.1")
+    .package(url: "https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git", from: "1.7.1")
 ],
 targets: [
     .target(
         name: "YourApp",
         dependencies: [
-            .product(name: "LivenessCheck", package: "ios-single-liveness-expo")
+            .product(name: "LivenessCheck", package: "sid-liveness-sdk-ios")
         ]
     )
 ]
 ```
 
-> **Note:** the package is currently published from the `EQua-Dev` mirror. Once the official `sourceidtechorg/sid-liveness-sdk-ios` repository is public, swap the URL — the API is identical.
+> **Note:** [`sourceidtechorg/sid-liveness-sdk-ios`](https://github.com/sourceidtechorg/sid-liveness-sdk-ios) is the official repository. The historical `EQua-Dev/ios-single-liveness-expo` URL still resolves for existing consumers, but new integrations should use the URL above (the `package:` identity differs between the two, so pick one and stay consistent).
 
 ### CocoaPods
 
