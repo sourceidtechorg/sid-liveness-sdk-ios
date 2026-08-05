@@ -18,6 +18,29 @@ public struct LivenessSDK {
     /// Session status required before the capture flow is allowed to start.
     static let statusCreated = "CREATED"
 
+    /// Fetches the scored result of a session from the gateway (status,
+    /// confidence, reference image URL). Returns nil when the gateway could
+    /// not deliver a result; the failure is logged.
+    public static func fetchSessionResult(
+        sessionId: String,
+        apiConfig: LivenessApiConfig
+    ) async -> GatewaySessionResult? {
+        let outcome = await SessionStatusChecker.fetchStatus(
+            apiConfig: apiConfig,
+            sessionId: sessionId
+        )
+        switch outcome {
+        case .status(let result):
+            return result
+        case .gatewayRejected(let httpCode, let gatewayMessage):
+            Logger.livenessSDK.warning("Result fetch rejected: HTTP \(httpCode) — \(gatewayMessage ?? "no message", privacy: .public)")
+            return nil
+        case .unreachable(let detail):
+            Logger.livenessSDK.warning("Result fetch failed: \(detail, privacy: .public)")
+            return nil
+        }
+    }
+
     /// Checks whether a session can be used (gateway status `CREATED`)
     /// without showing any UI. Returns `nil` when the session is usable, or
     /// the `LivenessError` to surface to the user otherwise.
@@ -65,10 +88,21 @@ public struct LivenessSDK {
         apiConfig: LivenessApiConfig? = nil,
         onComplete: @escaping (LivenessResult) -> Void
     ) -> some View {
-        // Central logging: every failure is recorded before the caller sees it.
+        // Central logging: every failure is recorded before the caller sees
+        // it. After a successful capture, when gateway credentials were
+        // provided, the scored result is fetched and included in the callback.
         let complete: (LivenessResult) -> Void = { result in
             if case .failure(let error) = result {
                 Logger.livenessSDK.error("Liveness failed \(error.description, privacy: .public)")
+                onComplete(result)
+                return
+            }
+            if case .success(let payload) = result, payload == nil, let apiConfig {
+                Task { @MainActor in
+                    let fetched = await fetchSessionResult(sessionId: sessionId, apiConfig: apiConfig)
+                    onComplete(.success(fetched))
+                }
+                return
             }
             onComplete(result)
         }

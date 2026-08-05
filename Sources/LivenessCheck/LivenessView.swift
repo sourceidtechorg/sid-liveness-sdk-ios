@@ -57,7 +57,9 @@ public struct FaceLivenessScreen: View {
             ) { result in
                 switch result {
                 case .success:
-                    onCompletion(.success)
+                    // The result payload is attached by LivenessSDK when
+                    // gateway credentials were provided.
+                    onCompletion(.success(nil))
                 case .failure(let err):
                     onCompletion(.failure(Self.mapDetectorError(err)))
                 }

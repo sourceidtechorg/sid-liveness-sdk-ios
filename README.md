@@ -34,11 +34,11 @@ In Xcode: **File ▸ Add Package Dependencies…** and enter:
 https://github.com/EQua-Dev/ios-single-liveness-expo.git
 ```
 
-selecting **Up to Next Major Version** from `1.6.0`. Or in `Package.swift`:
+selecting **Up to Next Major Version** from `1.7.0`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.6.0")
+    .package(url: "https://github.com/EQua-Dev/ios-single-liveness-expo.git", from: "1.7.0")
 ],
 targets: [
     .target(
@@ -185,7 +185,7 @@ Returns a SwiftUI view hosting the liveness detector. `region` defaults to
 
 | Result | Meaning |
 | --- | --- |
-| `.success` | The capture flow completed. Verify the session result server-side. |
+| `.success(GatewaySessionResult?)` | The capture flow completed. The payload (status, 0–100 confidence, short-lived reference image URL) is fetched from the gateway right after completion when `apiConfig` was provided; nil otherwise — verify server-side in that case. |
 | `.failure(LivenessError)` | See the error contract below. |
 
 ### Error contract (`LivenessError`)
@@ -240,8 +240,8 @@ Releases are consumed straight from git tags via Swift Package Manager:
 ```bash
 # verify it builds first
 xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' build
-git tag 1.6.0
-git push origin 1.6.0                # or the appropriate remote
+git tag 1.7.0
+git push origin 1.7.0                # or the appropriate remote
 ```
 
 ---

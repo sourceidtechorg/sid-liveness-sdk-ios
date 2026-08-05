@@ -5,11 +5,20 @@
 
 import Foundation
 
+/// The gateway's view of a liveness session. `confidence` and
+/// `referenceImageUrl` are present once the session has been run and scored
+/// (status "SUCCEEDED").
+public struct GatewaySessionResult: Equatable {
+    public let status: String
+    public let confidence: Double?
+    public let referenceImageUrl: String?
+}
+
 /// Outcome of a session status query, kept distinct so callers can phrase
 /// user-facing messages accurately (gateway said no vs. couldn't reach it).
 enum StatusCheckOutcome {
-    /// The gateway answered with a session status (e.g. "CREATED").
-    case status(String)
+    /// The gateway answered with the session's state.
+    case status(GatewaySessionResult)
     /// The gateway answered but rejected the request (non-2xx). This is also
     /// what happens for sessions that were already run.
     case gatewayRejected(httpCode: Int, gatewayMessage: String?)
@@ -22,14 +31,14 @@ extension LivenessError {
     /// session is usable (status CREATED).
     static func from(outcome: StatusCheckOutcome) -> LivenessError? {
         switch outcome {
-        case .status(let status):
-            if status.caseInsensitiveCompare(LivenessSDK.statusCreated) == .orderedSame {
+        case .status(let result):
+            if result.status.caseInsensitiveCompare(LivenessSDK.statusCreated) == .orderedSame {
                 return nil
             }
             return LivenessError(
                 code: LivenessError.sessionNotUsableCode,
                 userMessage: "This verification session has already been used or has expired. Please start a new check.",
-                debugMessage: "Gateway reported session status \"\(status)\"; launch requires \"\(LivenessSDK.statusCreated)\""
+                debugMessage: "Gateway reported session status \"\(result.status)\"; launch requires \"\(LivenessSDK.statusCreated)\""
             )
         case .gatewayRejected(let httpCode, let gatewayMessage):
             // The gateway also 400s for sessions that were already run, so a
@@ -81,12 +90,16 @@ enum SessionStatusChecker {
                 return .gatewayRejected(httpCode: httpCode, gatewayMessage: gatewayMessage)
             }
 
-            guard let status = (json?["data"] as? [String: Any])?["status"] as? String,
-                  !status.isEmpty else {
+            let payload = json?["data"] as? [String: Any]
+            guard let status = payload?["status"] as? String, !status.isEmpty else {
                 let body = String(data: data.prefix(200), encoding: .utf8) ?? ""
                 return .unreachable(detail: "Gateway response has no session status (body: \(body))")
             }
-            return .status(status)
+            return .status(GatewaySessionResult(
+                status: status,
+                confidence: (payload?["confidence"] as? NSNumber)?.doubleValue,
+                referenceImageUrl: (payload?["referenceImageUrl"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            ))
         } catch {
             return .unreachable(detail: "\(type(of: error)): \(error.localizedDescription)")
         }

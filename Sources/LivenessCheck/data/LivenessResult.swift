@@ -9,6 +9,9 @@
 import Foundation
 
 public enum LivenessResult {
-    case success
+    /// The associated `GatewaySessionResult` (status/confidence/reference
+    /// image URL) is populated when `LivenessApiConfig` was provided to
+    /// `start`; nil otherwise or when the post-completion fetch failed.
+    case success(GatewaySessionResult?)
     case failure(LivenessError)
 }
