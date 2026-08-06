@@ -73,10 +73,8 @@ extension LivenessError {
 enum SessionStatusChecker {
 
     static func fetchStatus(environment: LivenessEnvironment, sessionId: String) async -> StatusCheckOutcome {
-        let base = environment.baseUrl.hasSuffix("/")
-            ? String(environment.baseUrl.dropLast())
-            : environment.baseUrl
-        guard let url = URL(string: base + "/liveness-result") else {
+        // The gateway route is the liveness base itself (POST /v1/api/liveness).
+        guard let url = URL(string: environment.baseUrl) else {
             return .unreachable(detail: "Invalid gateway base URL: \(environment.baseUrl)")
         }
 
