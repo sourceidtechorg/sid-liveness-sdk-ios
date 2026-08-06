@@ -66,7 +66,7 @@ extension LivenessError {
     }
 }
 
-/// Queries the gateway's `POST /liveness/liveness-result` endpoint for the
+/// Queries the gateway liveness route (POST to the environment base) for the
 /// status of a session. The endpoint expects the session id in the
 /// `reference` field and reports `data.status` (e.g. "CREATED") for a
 /// session that has not been run yet.
