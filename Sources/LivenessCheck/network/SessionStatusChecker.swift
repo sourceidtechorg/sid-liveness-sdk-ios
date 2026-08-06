@@ -64,20 +64,21 @@ extension LivenessError {
 /// session that has not been run yet.
 enum SessionStatusChecker {
 
-    static func fetchStatus(apiConfig: LivenessApiConfig, sessionId: String) async -> StatusCheckOutcome {
-        let base = apiConfig.baseUrl.hasSuffix("/")
-            ? String(apiConfig.baseUrl.dropLast())
-            : apiConfig.baseUrl
+    static func fetchStatus(environment: LivenessEnvironment, sessionId: String, apiKey: String?) async -> StatusCheckOutcome {
+        let base = environment.baseUrl.hasSuffix("/")
+            ? String(environment.baseUrl.dropLast())
+            : environment.baseUrl
         guard let url = URL(string: base + "/liveness/liveness-result") else {
-            return .unreachable(detail: "Invalid gateway base URL: \(apiConfig.baseUrl)")
+            return .unreachable(detail: "Invalid gateway base URL: \(environment.baseUrl)")
         }
 
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(apiConfig.apiKey, forHTTPHeaderField: "x-api-key")
-        request.setValue("Bearer \(apiConfig.bearerToken)", forHTTPHeaderField: "Authorization")
+        if let apiKey {
+            request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        }
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: ["reference": sessionId])

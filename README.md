@@ -117,20 +117,17 @@ struct VerificationScreen: View {
 ### Pre-flight session status check (optional)
 
 Liveness sessions are single-use and short-lived. To avoid opening the camera
-for a session that was already used or has expired, pass a `LivenessApiConfig`
-— the SDK then asks the SourceID gateway for the session's status first and
-only starts the capture flow when the status is `CREATED` (a themed spinner is
-shown while the check runs):
+for a session that was already used or has expired, pass a `LivenessEnvironment`
+— the SDK derives the gateway base URL internally, asks for the session's
+status first, and only starts the capture flow when the status is `CREATED`
+(a themed spinner is shown while the check runs):
 
 ```swift
 LivenessSDK.start(
     sessionId: sessionIdFromYourBackend,
     config: LivenessUIConfig(theme: "dark"),
-    apiConfig: LivenessApiConfig(
-        baseUrl: "https://<your-gateway-host>/v1/api",
-        apiKey: yourApiKey,          // x-api-key header
-        bearerToken: freshUserToken  // Authorization header; tokens expire
-    )
+    environment: .production, // or .sandbox / .uat / .development
+    apiKey: yourApiKey // x-api-key header; omit once the gateway drops it
 ) { result in
     // When the check blocks the launch: .failure with code SESSION_NOT_USABLE,
     // userMessage "This verification session has already been used or has
@@ -138,19 +135,19 @@ LivenessSDK.start(
 }
 ```
 
-The check calls `POST {baseUrl}/liveness/liveness-result` with the session id
-as the `reference`. Omit `apiConfig` to skip the check and start directly
-(previous behaviour).
+The check calls `POST /liveness/liveness-result` with the session id as the
+`reference` (no bearer token needed). Omit `environment` to skip the check
+and start directly.
 
-**Zero-UI gating:** passing `apiConfig` to `start` shows a brief spinner while
+**Zero-UI gating:** passing `environment` to `start` shows a brief spinner while
 the check runs (the view is already presented). To validate **before showing
 anything at all**, call `checkSession` first and only present on `nil`:
 
 ```swift
-if let error = await LivenessSDK.checkSession(sessionId: sessionId, apiConfig: apiConfig) {
+if let error = await LivenessSDK.checkSession(sessionId: sessionId, environment: .production, apiKey: apiKey) {
     // Nothing was shown; tell the user, e.g. error.userMessage
 } else {
-    showLiveness = true   // present LivenessSDK.start(..., apiConfig: nil)
+    showLiveness = true   // present LivenessSDK.start(..., environment: nil)
 }
 ```
 
@@ -177,15 +174,15 @@ present(host, animated: true)
 
 ## API
 
-### `LivenessSDK.start(sessionId:region:config:apiConfig:onComplete:) -> some View`
+### `LivenessSDK.start(sessionId:region:config:environment:apiKey:onComplete:) -> some View`
 
 Returns a SwiftUI view hosting the liveness detector. `region` defaults to
-`"us-east-1"`; `apiConfig` (optional) enables the pre-flight status check.
+`"us-east-1"`; `environment` (optional) enables the pre-flight status check and result fetch; `apiKey` is sent as the x-api-key header when provided.
 `onComplete` fires exactly once:
 
 | Result | Meaning |
 | --- | --- |
-| `.success(GatewaySessionResult?)` | The capture flow completed. The payload (status, 0–100 confidence, short-lived reference image URL) is fetched from the gateway right after completion when `apiConfig` was provided; nil otherwise — verify server-side in that case. |
+| `.success(GatewaySessionResult?)` | The capture flow completed. The payload (status, 0–100 confidence, short-lived reference image URL) is fetched from the gateway right after completion when `environment` was provided; nil otherwise — verify server-side in that case. |
 | `.failure(LivenessError)` | See the error contract below. |
 
 ### Error contract (`LivenessError`)
