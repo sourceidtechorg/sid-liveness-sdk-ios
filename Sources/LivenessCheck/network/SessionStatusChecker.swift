@@ -41,8 +41,16 @@ extension LivenessError {
                 debugMessage: "Gateway reported session status \"\(result.status)\"; launch requires \"\(LivenessSDK.statusCreated)\""
             )
         case .gatewayRejected(let httpCode, let gatewayMessage):
-            // The gateway also 400s for sessions that were already run, so a
-            // rejection means "don't open the camera".
+            // 401/403 is an endpoint/config problem, not a spent session;
+            // other rejections (the gateway also 400s for already-run
+            // sessions) mean "don't open the camera".
+            if httpCode == 401 || httpCode == 403 {
+                return LivenessError(
+                    code: LivenessError.statusCheckFailedCode,
+                    userMessage: "We couldn't verify your session. Please try again later.",
+                    debugMessage: "Gateway rejected the status check with HTTP \(httpCode) (auth) — \(gatewayMessage ?? "no message")"
+                )
+            }
             return LivenessError(
                 code: LivenessError.sessionNotUsableCode,
                 userMessage: "This verification session has already been used or has expired. Please start a new check.",
@@ -64,11 +72,11 @@ extension LivenessError {
 /// session that has not been run yet.
 enum SessionStatusChecker {
 
-    static func fetchStatus(environment: LivenessEnvironment, sessionId: String, apiKey: String?) async -> StatusCheckOutcome {
+    static func fetchStatus(environment: LivenessEnvironment, sessionId: String) async -> StatusCheckOutcome {
         let base = environment.baseUrl.hasSuffix("/")
             ? String(environment.baseUrl.dropLast())
             : environment.baseUrl
-        guard let url = URL(string: base + "/liveness/liveness-result") else {
+        guard let url = URL(string: base + "/liveness-result") else {
             return .unreachable(detail: "Invalid gateway base URL: \(environment.baseUrl)")
         }
 
@@ -76,9 +84,6 @@ enum SessionStatusChecker {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        if let apiKey {
-            request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        }
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: ["reference": sessionId])

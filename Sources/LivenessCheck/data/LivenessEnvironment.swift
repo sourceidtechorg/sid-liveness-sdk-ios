@@ -10,15 +10,13 @@ import Foundation
 public enum LivenessEnvironment: String, CaseIterable {
     case production
     case sandbox
-    case uat
     case development
 
     var baseUrl: String {
         switch self {
-        case .production: return "https://api.usesourceid.com/v1/api"
-        case .sandbox: return "https://api.sbx.usesourceid.com/v1/api"
-        case .uat: return "https://api.uat.usesourceid.com/v1/api"
-        case .development: return "https://api-rd.tailfaed50.ts.net/v1/api"
+        case .production: return "https://core-api.sourceid.tech/v1/api/liveness"
+        case .sandbox: return "https://core-api.sbx.sourceid.tech/v1/api/liveness"
+        case .development: return "https://api-rd.tailfaed50.ts.net/v1/api/liveness"
         }
     }
 

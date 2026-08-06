@@ -126,8 +126,7 @@ status first, and only starts the capture flow when the status is `CREATED`
 LivenessSDK.start(
     sessionId: sessionIdFromYourBackend,
     config: LivenessUIConfig(theme: "dark"),
-    environment: .production, // or .sandbox / .uat / .development
-    apiKey: yourApiKey // x-api-key header; omit once the gateway drops it
+    environment: .production // or .sandbox / .development
 ) { result in
     // When the check blocks the launch: .failure with code SESSION_NOT_USABLE,
     // userMessage "This verification session has already been used or has
@@ -135,16 +134,16 @@ LivenessSDK.start(
 }
 ```
 
-The check calls `POST /liveness/liveness-result` with the session id as the
-`reference` (no bearer token needed). Omit `environment` to skip the check
-and start directly.
+The check calls the gateway's `liveness-result` endpoint with the session id
+as the `reference` — no keys or tokens required. Omit `environment` to skip
+the check and start directly.
 
 **Zero-UI gating:** passing `environment` to `start` shows a brief spinner while
 the check runs (the view is already presented). To validate **before showing
 anything at all**, call `checkSession` first and only present on `nil`:
 
 ```swift
-if let error = await LivenessSDK.checkSession(sessionId: sessionId, environment: .production, apiKey: apiKey) {
+if let error = await LivenessSDK.checkSession(sessionId: sessionId, environment: .production) {
     // Nothing was shown; tell the user, e.g. error.userMessage
 } else {
     showLiveness = true   // present LivenessSDK.start(..., environment: nil)
@@ -174,10 +173,10 @@ present(host, animated: true)
 
 ## API
 
-### `LivenessSDK.start(sessionId:region:config:environment:apiKey:onComplete:) -> some View`
+### `LivenessSDK.start(sessionId:region:config:environment:onComplete:) -> some View`
 
 Returns a SwiftUI view hosting the liveness detector. `region` defaults to
-`"us-east-1"`; `environment` (optional) enables the pre-flight status check and result fetch; `apiKey` is sent as the x-api-key header when provided.
+`"us-east-1"`; `environment` (optional) enables the pre-flight status check and result fetch — no keys or tokens required.
 `onComplete` fires exactly once:
 
 | Result | Meaning |

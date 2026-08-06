@@ -23,13 +23,11 @@ public struct LivenessSDK {
     /// not deliver a result; the failure is logged.
     public static func fetchSessionResult(
         sessionId: String,
-        environment: LivenessEnvironment,
-        apiKey: String? = nil
+        environment: LivenessEnvironment
     ) async -> GatewaySessionResult? {
         let outcome = await SessionStatusChecker.fetchStatus(
             environment: environment,
-            sessionId: sessionId,
-            apiKey: apiKey
+            sessionId: sessionId
         )
         switch outcome {
         case .status(let result):
@@ -52,13 +50,11 @@ public struct LivenessSDK {
     /// this method, pass `environment: nil` to `start` to avoid re-checking.
     public static func checkSession(
         sessionId: String,
-        environment: LivenessEnvironment,
-        apiKey: String? = nil
+        environment: LivenessEnvironment
     ) async -> LivenessError? {
         let outcome = await SessionStatusChecker.fetchStatus(
             environment: environment,
-            sessionId: sessionId,
-            apiKey: apiKey
+            sessionId: sessionId
         )
         let error = LivenessError.from(outcome: outcome)
         if let error {
@@ -78,8 +74,7 @@ public struct LivenessSDK {
     /// against the gateway and the capture flow only starts if the status is
     /// `CREATED`; any other status (already used, expired, ...) is reported
     /// through `onComplete` without opening the camera. When `environment` is
-    /// nil the check is skipped and the flow starts directly. `apiKey` is
-    /// sent as the x-api-key header when provided.
+    /// nil the check is skipped and the flow starts directly.
     ///
     /// Failures arrive as `LivenessError`: show `userMessage` to the user,
     /// log `debugMessage` (the SDK already logs it under the
@@ -91,7 +86,6 @@ public struct LivenessSDK {
         region: String = "us-east-1",
         config: LivenessUIConfig = .init(),
         environment: LivenessEnvironment? = nil,
-        apiKey: String? = nil,
         onComplete: @escaping (LivenessResult) -> Void
     ) -> some View {
         // Central logging: every failure is recorded before the caller sees
@@ -105,7 +99,7 @@ public struct LivenessSDK {
             }
             if case .success(let payload) = result, payload == nil, let environment {
                 Task { @MainActor in
-                    let fetched = await fetchSessionResult(sessionId: sessionId, environment: environment, apiKey: apiKey)
+                    let fetched = await fetchSessionResult(sessionId: sessionId, environment: environment)
                     onComplete(.success(fetched))
                 }
                 return
@@ -154,7 +148,6 @@ public struct LivenessSDK {
                 region: region,
                 config: config,
                 environment: environment,
-                apiKey: apiKey,
                 onComplete: complete
             )
         )
@@ -168,7 +161,6 @@ private struct LivenessGateView: View {
     let region: String
     let config: LivenessUIConfig
     let environment: LivenessEnvironment
-    let apiKey: String?
     let onComplete: (LivenessResult) -> Void
 
     @State private var allowed = false
@@ -197,8 +189,7 @@ private struct LivenessGateView: View {
             Task {
                 let outcome = await SessionStatusChecker.fetchStatus(
                     environment: environment,
-                    sessionId: sessionId,
-                    apiKey: apiKey
+                    sessionId: sessionId
                 )
                 await MainActor.run {
                     if let error = LivenessError.from(outcome: outcome) {
