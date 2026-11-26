@@ -10,5 +10,6 @@ Full UI customisation, shared with Android 1.9.0 (see CONTRACT.md).
 - All SourceID text is overridable and translatable through the app's `Localizable.strings` (`sid_liveness_*` keys).
 - The start page warns about the flashing colours (`sid_liveness_start_guideline_photosensitivity`).
 - Fix: in the dark theme without a primary colour, the start button no longer shows white text on a white button.
+- Fix: camera permission is requested before AWS's detector starts (as on Android), so a first-time permission prompt no longer fails the check when `showStartPage` is false. A denied camera returns `CAMERA_PERMISSION_DENIED` immediately.
 - New `CONTRACT.md`: the cross-platform reference for config fields, results and error codes.
 - Building now requires approving AWS's `SmithyCodeGeneratorPlugin` once per machine (Xcode: Trust & Enable; CI: `-skipPackagePluginValidation`). See README, "Approving AWS's build plugin".
