@@ -5,7 +5,10 @@ A small iOS app for testing this repository's `LivenessCheck` sources by hand, o
 ## Run
 
 1. Open `LivenessTester/LivenessTester.xcodeproj`, choose your signing team for the `LivenessTester` target, and run it on an iPhone. The camera check needs a real device; on a simulator you can still check the start page and error handling.
-2. Create a liveness session on your server (never in an app) and paste its id into the app, or start it from a Mac:
+2. Get a session id one of three ways:
+   - **New session** in the app: enter a sandbox test API key once (saved in the phone's Keychain), then tap New session. It calls `POST /v1/api/liveness/generate-liveness-url` on `api.sbx.sourceid.tech` and selects the `sandbox` SDK environment. RD is only reachable from devices on the SourceID tailnet. Test keys only: a real app gets session ids from its own server.
+   - Paste one created on your server.
+   - Start it from a Mac:
 
 ```bash
 xcrun devicectl device process launch --console --device <UDID> \
@@ -16,7 +19,9 @@ xcrun devicectl device process launch --console --device <UDID> \
 | --- | --- |
 | `-sessionId` | AWS liveness session id |
 | `-preset` | `standard` (no customisation), `dib` (dark theme, custom colours and fonts, no start page), `dibStart` (light theme, custom colours and fonts, start page) |
-| `-environment` | `development`, `sandbox` or `production`: turns on the pre-flight check and result fetch. The phone must reach that gateway. |
+| `-environment` | `none`, `sandbox`, `development` or `production` (`sbx`, `rd`, `prod` also accepted): turns on the pre-flight check and the post-capture result call. The phone must reach that gateway. |
+| `-backend` | `sbx` or `rd`: which developer API **New session** calls |
+| `-apiKey` | Test API key for that backend, saved to the Keychain. Pass it once; never commit it |
 | `-autostart` | `YES` to start immediately |
 | `-AppleLanguages` | `"(ar)"` to run in Arabic and check text overrides and right-to-left layout |
 
