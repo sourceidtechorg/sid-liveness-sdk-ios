@@ -65,7 +65,7 @@ enum Preset: String, CaseIterable, Identifiable {
 /// started from the Mac without typing on the phone:
 ///
 ///     xcrun devicectl device process launch --console --device <UDID> \
-///       tech.sourceid.liveness.tester -sessionId <ID> -preset dib -autostart YES
+///       tech.sourceid.liveness.tester -- -sessionId <ID> -preset dib -autostart YES
 ///
 /// - `-sessionId <id>`: AWS liveness session id (created server-side).
 /// - `-preset standard|dib|dibStart`: look preset.

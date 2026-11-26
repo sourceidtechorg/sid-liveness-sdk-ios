@@ -9,7 +9,7 @@ A small iOS app for testing this repository's `LivenessCheck` sources by hand, o
 
 ```bash
 xcrun devicectl device process launch --console --device <UDID> \
-  tech.sourceid.liveness.tester -sessionId <SESSION_ID> -preset dib -autostart YES
+  tech.sourceid.liveness.tester -- -sessionId <SESSION_ID> -preset dib -autostart YES
 ```
 
 | Argument | Values |
