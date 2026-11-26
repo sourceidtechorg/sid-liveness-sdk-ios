@@ -82,6 +82,8 @@ enum SessionStatusChecker {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        // Same as the SourceID web SDK: the gateway records the check under the SDK verification channel.
+        request.setValue("SDK", forHTTPHeaderField: "X-Verification-Channel")
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: ["reference": sessionId])

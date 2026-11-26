@@ -16,7 +16,7 @@ public enum LivenessEnvironment: String, CaseIterable {
         switch self {
         case .production: return "https://core-api.sourceid.tech/v1/api/liveness"
         case .sandbox: return "https://core-api.sbx.sourceid.tech/v1/api/liveness"
-        case .development: return "https://api-rd.tailfaed50.ts.net/v1/api/liveness"
+        case .development: return "https://core-api-rd.tailfaed50.ts.net/v1/api/liveness"
         }
     }
 
