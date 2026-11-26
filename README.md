@@ -52,6 +52,18 @@ targets: [
 
 > **Note:** [`sourceidtechorg/sid-liveness-sdk-ios`](https://github.com/sourceidtechorg/sid-liveness-sdk-ios) is the official repository. The historical `EQua-Dev/ios-single-liveness-expo` URL still resolves for existing consumers, but new integrations should use the URL above (the `package:` identity differs between the two, so pick one and stay consistent).
 
+### Approving AWS's build plugin (one time per machine)
+
+Since 1.9.0 the SDK uses AWS Amplify liveness 1.6.0, whose AWS SDK generates code at build time with the `SmithyCodeGeneratorPlugin` from `smithy-swift`. Xcode asks you to approve it once:
+
+1. The first build fails with *Plugin "SmithyCodeGeneratorPlugin" from package "smithy-swift" must be enabled before it can be used*.
+2. Open the Issue navigator (⌘5), click that error and choose **Trust & Enable**.
+3. If the next build reports *Build input files cannot be found … BuildToolPluginIntermediates*, choose **Product ▸ Clean Build Folder** and build again.
+
+Command-line and CI builds cannot show the prompt. Pass `-skipPackagePluginValidation` to `xcodebuild`, or on a CI machine run `defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES` (Apple's key name is spelled that way).
+
+There is no way to avoid the plugin: every AWS Amplify liveness release with theming requires an AWS SDK version that uses it.
+
 ### CocoaPods
 
 **Not currently supported.** The underlying AWS FaceLiveness library is distributed via Swift Package Manager only, and no released CocoaPods version can declare SPM dependencies from a podspec. Use Swift Package Manager. (Do **not** add the `FaceLiveness` pod from the CocoaPods trunk — that is an unrelated third-party SDK by a different vendor.)
@@ -265,7 +277,7 @@ Releases are consumed straight from git tags via Swift Package Manager:
 
 ```bash
 # verify it builds first
-xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' build
+xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation build
 git tag 1.9.0
 git push origin 1.9.0                # or the appropriate remote
 ```

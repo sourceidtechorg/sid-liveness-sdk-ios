@@ -11,3 +11,4 @@ Full UI customisation, shared with Android 1.9.0 (see CONTRACT.md).
 - The start page warns about the flashing colours (`sid_liveness_start_guideline_photosensitivity`).
 - Fix: in the dark theme without a primary colour, the start button no longer shows white text on a white button.
 - New `CONTRACT.md`: the cross-platform reference for config fields, results and error codes.
+- Building now requires approving AWS's `SmithyCodeGeneratorPlugin` once per machine (Xcode: Trust & Enable; CI: `-skipPackagePluginValidation`). See README, "Approving AWS's build plugin".
