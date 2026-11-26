@@ -1,0 +1,222 @@
+//
+//  LivenessSDK.swift
+//  LivenessCheck
+//
+//  Created by Richard Uzor on 08/10/2025.
+//
+
+import SwiftUI
+import os
+
+extension Logger {
+    /// Every SDK failure is logged here; filter with subsystem
+    /// `tech.sourceid.LivenessCheck` in Xcode's console or Console.app.
+    static let livenessSDK = Logger(subsystem: "tech.sourceid.LivenessCheck", category: "LivenessSDK")
+}
+
+public struct LivenessSDK {
+    /// Session status required before the capture flow is allowed to start.
+    static let statusCreated = "CREATED"
+
+    /// Fetches the scored result of a session from the gateway (status,
+    /// confidence, reference image URL). Returns nil when the gateway could
+    /// not deliver a result; the failure is logged.
+    public static func fetchSessionResult(
+        sessionId: String,
+        environment: LivenessEnvironment
+    ) async -> GatewaySessionResult? {
+        let outcome = await SessionStatusChecker.fetchStatus(
+            environment: environment,
+            sessionId: sessionId
+        )
+        switch outcome {
+        case .status(let result):
+            return result
+        case .gatewayRejected(let httpCode, let gatewayMessage):
+            Logger.livenessSDK.warning("Result fetch rejected: HTTP \(httpCode) — \(gatewayMessage ?? "no message", privacy: .public)")
+            return nil
+        case .unreachable(let detail):
+            Logger.livenessSDK.warning("Result fetch failed: \(detail, privacy: .public)")
+            return nil
+        }
+    }
+
+    /// Checks whether a session can be used (gateway status `CREATED`)
+    /// without showing any UI. Returns `nil` when the session is usable, or
+    /// the `LivenessError` to surface to the user otherwise.
+    ///
+    /// Call this before presenting the view returned by `start` when you
+    /// want nothing on screen at all for a faulty session. If you gate with
+    /// this method, pass `environment: nil` to `start` to avoid re-checking.
+    public static func checkSession(
+        sessionId: String,
+        environment: LivenessEnvironment
+    ) async -> LivenessError? {
+        let outcome = await SessionStatusChecker.fetchStatus(
+            environment: environment,
+            sessionId: sessionId
+        )
+        let error = LivenessError.from(outcome: outcome)
+        if let error {
+            Logger.livenessSDK.error("Session check failed \(error.description, privacy: .public)")
+        }
+        return error
+    }
+
+    /// Entry point for the SourceID liveness check.
+    ///
+    /// Returns a SwiftUI view hosting the AWS Face Liveness detector for the
+    /// given session. The `onComplete` callback fires exactly once with the
+    /// outcome. If Amplify cannot be configured, the callback receives the
+    /// failure immediately and an empty view is returned.
+    ///
+    /// When `environment` is provided, the session's status is first verified
+    /// against the gateway and the capture flow only starts if the status is
+    /// `CREATED`; any other status (already used, expired, ...) is reported
+    /// through `onComplete` without opening the camera. When `environment` is
+    /// nil the check is skipped and the flow starts directly.
+    ///
+    /// Failures arrive as `LivenessError`: show `userMessage` to the user,
+    /// log `debugMessage` (the SDK already logs it under the
+    /// `tech.sourceid.LivenessCheck` subsystem), branch on `code`
+    /// programmatically.
+    @MainActor
+    public static func start(
+        sessionId: String,
+        region: String = "us-east-1",
+        config: LivenessUIConfig = .init(),
+        environment: LivenessEnvironment? = nil,
+        onComplete: @escaping (LivenessResult) -> Void
+    ) -> some View {
+        // Central logging: every failure is recorded before the caller sees
+        // it. After a successful capture, when gateway credentials were
+        // provided, the scored result is fetched and included in the callback.
+        let complete: (LivenessResult) -> Void = { result in
+            if case .failure(let error) = result {
+                Logger.livenessSDK.error("Liveness failed \(error.description, privacy: .public)")
+                onComplete(result)
+                return
+            }
+            if case .success(let payload) = result, payload == nil, let environment {
+                Task { @MainActor in
+                    let fetched = await fetchSessionResult(sessionId: sessionId, environment: environment)
+                    onComplete(.success(fetched))
+                }
+                return
+            }
+            onComplete(result)
+        }
+
+        guard !sessionId.trimmingCharacters(in: .whitespaces).isEmpty else {
+            DispatchQueue.main.async {
+                complete(.failure(LivenessError(
+                    code: LivenessError.invalidArgumentsCode,
+                    userMessage: "Verification could not start. Please go back and try again.",
+                    debugMessage: "start() called with a blank sessionId"
+                )))
+            }
+            return AnyView(EmptyView())
+        }
+
+        do {
+            try AmplifyInitializer.configureIfNeeded()
+        } catch {
+            DispatchQueue.main.async {
+                complete(.failure(LivenessError(
+                    code: LivenessError.configFailedCode,
+                    userMessage: "The verification service could not start. Please try again later.",
+                    debugMessage: "Amplify initialization failed: \(error.localizedDescription)"
+                )))
+            }
+            return AnyView(EmptyView())
+        }
+
+        guard let environment else {
+            return AnyView(
+                LivenessHostView(
+                    sessionId: sessionId,
+                    region: region,
+                    config: config,
+                    onComplete: complete
+                )
+            )
+        }
+
+        return AnyView(
+            LivenessGateView(
+                sessionId: sessionId,
+                region: region,
+                config: config,
+                environment: environment,
+                onComplete: complete
+            )
+        )
+    }
+}
+
+/// Verifies the session status against the gateway before showing the
+/// capture flow; shows a themed spinner while the check runs.
+private struct LivenessGateView: View {
+    let sessionId: String
+    let region: String
+    let config: LivenessUIConfig
+    let environment: LivenessEnvironment
+    let onComplete: (LivenessResult) -> Void
+
+    @State private var allowed = false
+    @State private var checkStarted = false
+
+    var body: some View {
+        Group {
+            if allowed {
+                LivenessHostView(
+                    sessionId: sessionId,
+                    region: region,
+                    config: config,
+                    onComplete: onComplete
+                )
+            } else {
+                ZStack {
+                    config.backgroundColor
+                        .ignoresSafeArea()
+                    ProgressView()
+                }
+            }
+        }
+        .onAppear {
+            guard !checkStarted else { return }
+            checkStarted = true
+            Task {
+                let outcome = await SessionStatusChecker.fetchStatus(
+                    environment: environment,
+                    sessionId: sessionId
+                )
+                await MainActor.run {
+                    if let error = LivenessError.from(outcome: outcome) {
+                        onComplete(.failure(error))
+                    } else {
+                        allowed = true
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct LivenessHostView: View {
+    let sessionId: String
+    let region: String
+    let config: LivenessUIConfig
+    let onComplete: (LivenessResult) -> Void
+    @State private var isPresented = true
+
+    var body: some View {
+        FaceLivenessScreen(
+            sessionID: sessionId,
+            region: region,
+            config: config,
+            isPresented: $isPresented,
+            onCompletion: onComplete
+        )
+    }
+}

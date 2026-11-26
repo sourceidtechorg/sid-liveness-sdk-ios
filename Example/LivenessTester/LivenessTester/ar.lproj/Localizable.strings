@@ -1,0 +1,25 @@
+/*
+  Sample Arabic overrides, used only to test that a host app can replace and
+  translate SDK text (run the tester with -AppleLanguages "(ar)").
+  These are unreviewed placeholder translations, not product copy.
+*/
+
+/* SourceID start page */
+"sid_liveness_start_title" = "التحقق من الحيوية";
+"sid_liveness_start_intro" = "نحتاج إلى التأكد من أنك شخص حقيقي لأسباب أمنية.";
+"sid_liveness_start_guidelines_intro" = "يرجى اتباع الإرشادات التالية لضمان التقاط صحيح:";
+"sid_liveness_start_guideline_light" = "استخدم مكانًا جيد الإضاءة بإضاءة متساوية.";
+"sid_liveness_start_guideline_center" = "أبقِ رأسك في المنتصف واتبع التعليمات.";
+"sid_liveness_start_guideline_coverings" = "أزل أي غطاء يحجب وجهك.";
+"sid_liveness_start_guideline_photosensitivity" = "يعرض الفحص ألوانًا وامضة على الشاشة. توخَّ الحذر إذا كنت حساسًا للضوء الوامض.";
+"sid_liveness_start_guideline_retries" = "بعد 5 محاولات فاشلة، انتظر من 30 إلى 60 دقيقة.";
+"sid_liveness_start_guideline_ready" = "عندما تكون جاهزًا، اضغط ابدأ.";
+"sid_liveness_start_button" = "ابدأ التحقق";
+"sid_liveness_powered_by" = "مدعوم من ";
+
+/* AWS detector guidance */
+"amplify_ui_liveness_challenge_instruction_hold_still" = "ثبّت وجهك";
+"amplify_ui_liveness_challenge_instruction_move_face_closer" = "اقترب قليلًا";
+"amplify_ui_liveness_challenge_instruction_move_face_back" = "ابتعد قليلًا";
+"amplify_ui_liveness_challenge_instruction_hold_face_during_freshness" = "أبقِ وجهك داخل الإطار أثناء الأضواء الملونة.";
+"amplify_ui_liveness_challenge_instruction_move_face_in_front_of_camera" = "ضع وجهك أمام الكاميرا";
