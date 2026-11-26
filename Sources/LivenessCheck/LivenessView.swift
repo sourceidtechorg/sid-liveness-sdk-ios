@@ -3,6 +3,7 @@
 //  LivenessCheck
 //
 
+import AVFoundation
 import SwiftUI
 import FaceLiveness
 
@@ -29,13 +30,51 @@ public struct FaceLivenessScreen: View {
     }
 
     @State private var showInstructions: Bool
+    @State private var cameraReady = false
 
     public var body: some View {
         if showInstructions {
             LivenessStartView(config: config) { showInstructions = false }
-        } else {
+        } else if cameraReady {
             captureView
+        } else {
+            // Camera access is settled before AWS's detector starts, as on
+            // Android: a permission prompt appearing over a running capture
+            // fails the check, which hit first-time users when showStartPage
+            // is false (the detector then starts as soon as this view appears).
+            config.backgroundColor
+                .ignoresSafeArea()
+                .onAppear(perform: ensureCameraAccess)
         }
+    }
+
+    private func ensureCameraAccess() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            cameraReady = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        cameraReady = true
+                    } else {
+                        onCompletion(.failure(Self.cameraDenied("the person declined the camera permission prompt")))
+                    }
+                }
+            }
+        case .denied, .restricted:
+            onCompletion(.failure(Self.cameraDenied("camera access is denied or restricted in Settings")))
+        @unknown default:
+            cameraReady = true
+        }
+    }
+
+    private static func cameraDenied(_ detail: String) -> LivenessError {
+        LivenessError(
+            code: LivenessError.cameraPermissionDeniedCode,
+            userMessage: "Camera access is required for the liveness check. Please allow camera access in Settings and try again.",
+            debugMessage: "Camera permission not granted: \(detail)"
+        )
     }
 
     private var captureView: some View {
