@@ -48,10 +48,14 @@ struct LivenessStartView: View {
                             .font(config.font(.subheadline, .regular))
                             .foregroundColor(config.textColor)
                         ForEach(guidelines, id: \.self) { line in
-                            Text("- \(line)")
-                                .font(config.font(.footnote, .regular))
-                                .foregroundColor(config.textColor)
-                                .padding(.vertical, 2)
+                            // A separate bullet keeps it at the leading edge in right-to-left languages.
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text(verbatim: "•")
+                                Text(line)
+                            }
+                            .font(config.font(.footnote, .regular))
+                            .foregroundColor(config.textColor)
+                            .padding(.vertical, 2)
                         }
                     }
                     .padding(16)
