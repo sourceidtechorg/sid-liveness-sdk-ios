@@ -21,4 +21,10 @@ extension Color {
 
         self.init(red: r, green: g, blue: b)
     }
+
+    /// `"#RRGGBB"` to a colour; nil for nil or invalid input.
+    static func fromHex(_ hex: String?) -> Color? {
+        guard let hex else { return nil }
+        return Color(hex: hex)
+    }
 }

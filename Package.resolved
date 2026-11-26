@@ -1,13 +1,12 @@
 {
-  "originHash" : "2ff51c6dcab22c7b6a64aaff19c13688849c1ebfc0acb7d07337ff721ccafd01",
   "pins" : [
     {
       "identity" : "amplify-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/aws-amplify/amplify-swift",
       "state" : {
-        "revision" : "cfdda779c9bc699447b84a8afd9c234ace4f5ffd",
-        "version" : "2.51.1"
+        "revision" : "520fa29101ac7bfa81f9ffa5abaf832f9467fd7c",
+        "version" : "2.64.0"
       }
     },
     {
@@ -24,8 +23,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/aws-amplify/amplify-ui-swift-liveness.git",
       "state" : {
-        "revision" : "c1b77dd8e83c27b94c10f80a9b8a4ec3bebbd4cc",
-        "version" : "1.4.2"
+        "revision" : "140e4c073747f0071e0a34058e0fec0be9cd9c75",
+        "version" : "1.6.0"
+      }
+    },
+    {
+      "identity" : "async-http-client",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swift-server/async-http-client.git",
+      "state" : {
+        "revision" : "c464bf94eac4273cad7424307a5dc7e44e361905",
+        "version" : "1.30.1"
       }
     },
     {
@@ -33,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/awslabs/aws-crt-swift",
       "state" : {
-        "revision" : "5be6550f81c760cceb0a43c30d4149ac55c5640c",
-        "version" : "0.52.1"
+        "revision" : "bb952f4afde4fb6e8ea8813a641973ba6c2ab9eb",
+        "version" : "0.64.5"
       }
     },
     {
@@ -42,35 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/awslabs/aws-sdk-swift",
       "state" : {
-        "revision" : "8b5336764297d34157bd580374b5f6e182746759",
-        "version" : "1.5.18"
-      }
-    },
-    {
-      "identity" : "grpc-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/grpc/grpc-swift.git",
-      "state" : {
-        "revision" : "a56a157218877ef3e9625f7e1f7b2cb7e46ead1b",
-        "version" : "1.26.1"
-      }
-    },
-    {
-      "identity" : "opentelemetry-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/open-telemetry/opentelemetry-swift",
-      "state" : {
-        "revision" : "ef63c346d05f4fa7c9ca883f92631fd139eb2cfe",
-        "version" : "1.17.1"
-      }
-    },
-    {
-      "identity" : "opentracing-objc",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/undefinedlabs/opentracing-objc",
-      "state" : {
-        "revision" : "18c1a35ca966236cee0c5a714a51a73ff33384c1",
-        "version" : "0.5.2"
+        "revision" : "e6f4fb5d5a8b6d4d560f87c8b0107b743f3f591c",
+        "version" : "1.8.31"
       }
     },
     {
@@ -78,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/smithy-lang/smithy-swift",
       "state" : {
-        "revision" : "a6cac0739d76ef08e2d927febc682d9898e76fe2",
-        "version" : "0.152.0"
+        "revision" : "bb7ae0bac6896d15d7452c32b0e084348fac8a2a",
+        "version" : "0.268.0"
       }
     },
     {
@@ -87,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/stephencelis/SQLite.swift.git",
       "state" : {
-        "revision" : "a95fc6df17d108bd99210db5e8a9bac90fe984b8",
-        "version" : "0.15.3"
+        "revision" : "392dd6058624d9f6c5b4c769d165ddd8c7293394",
+        "version" : "0.15.4"
       }
     },
     {
@@ -164,6 +145,15 @@
       }
     },
     {
+      "identity" : "swift-distributed-tracing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-distributed-tracing.git",
+      "state" : {
+        "revision" : "9f982a7ec8dd815bf57024e39de592813ca14399",
+        "version" : "1.7.4"
+      }
+    },
+    {
       "identity" : "swift-http-structured-headers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-structured-headers.git",
@@ -188,15 +178,6 @@
       "state" : {
         "revision" : "ce592ae52f982c847a4efc0dd881cc9eb32d29f2",
         "version" : "1.6.4"
-      }
-    },
-    {
-      "identity" : "swift-metrics",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-metrics.git",
-      "state" : {
-        "revision" : "0743a9364382629da3bf5677b46a2c4b1ce5d2a6",
-        "version" : "2.7.1"
       }
     },
     {
@@ -254,15 +235,6 @@
       }
     },
     {
-      "identity" : "swift-protobuf",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-protobuf.git",
-      "state" : {
-        "revision" : "2547102afd04fe49f1b286090f13ebce07284980",
-        "version" : "1.31.1"
-      }
-    },
-    {
       "identity" : "swift-service-lifecycle",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/swift-service-lifecycle.git",
@@ -281,14 +253,14 @@
       }
     },
     {
-      "identity" : "thrift-swift",
+      "identity" : "swift-toolchain-sqlite",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/undefinedlabs/Thrift-Swift",
+      "location" : "https://github.com/swiftlang/swift-toolchain-sqlite",
       "state" : {
-        "revision" : "18ff09e6b30e589ed38f90a1af23e193b8ecef8e",
-        "version" : "1.1.2"
+        "revision" : "b626d3002773b1a1304166643e7f118f724b2132",
+        "version" : "1.0.4"
       }
     }
   ],
-  "version" : 3
+  "version" : 2
 }

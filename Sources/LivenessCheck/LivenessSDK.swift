@@ -177,7 +177,7 @@ private struct LivenessGateView: View {
                 )
             } else {
                 ZStack {
-                    (config.theme.lowercased() == "dark" ? Color.black : Color.white)
+                    config.backgroundColor
                         .ignoresSafeArea()
                     ProgressView()
                 }

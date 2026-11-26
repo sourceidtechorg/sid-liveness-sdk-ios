@@ -25,9 +25,10 @@ public struct FaceLivenessScreen: View {
         self.config = config
         self._isPresented = isPresented
         self.onCompletion = onCompletion
+        self._showInstructions = State(initialValue: config.showStartPage)
     }
 
-    @State private var showInstructions = true
+    @State private var showInstructions: Bool
 
     public var body: some View {
         if showInstructions {
@@ -41,7 +42,7 @@ public struct FaceLivenessScreen: View {
         VStack(spacing: 0) {
             if let title = config.customTitle {
                 Text(title)
-                    .font(.title2.bold())
+                    .font(config.font(.title2, .bold))
                     .foregroundColor(config.getPrimaryColor())
                     .padding()
                     .frame(maxWidth: .infinity)
@@ -51,7 +52,8 @@ public struct FaceLivenessScreen: View {
             FaceLivenessDetectorView(
                 sessionID: sessionID,
                 region: region,
-                // The SDK shows its own instruction page first.
+                // AWS's start view is never used: the SDK has its own start
+                // page, or the host app provides one (showStartPage = false).
                 disableStartView: true,
                 isPresented: $isPresented
             ) { result in
@@ -64,12 +66,14 @@ public struct FaceLivenessScreen: View {
                     onCompletion(.failure(Self.mapDetectorError(err)))
                 }
             }
+            .hidesCancelButton(config.hideCancelButton)
+            .faceLivenessDetectorTheme(config.makeDetectorTheme())
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if !config.hideBranding {
                 HStack {
-                    Text("Powered by ")
-                        .font(.headline)
+                    Text(sidLocalized("sid_liveness_powered_by", "Powered by "))
+                        .font(config.font(.headline, .medium))
                         .foregroundColor(config.getPrimaryColor().opacity(0.6))
 
                     Image(config.theme.lowercased() == "dark" ? "sid_logo_dark" : "sid_logo_light", bundle: .livenessCheck)
@@ -86,7 +90,7 @@ public struct FaceLivenessScreen: View {
     }
 
     private var backgroundColor: Color {
-        config.theme.lowercased() == "dark" ? .black : .white
+        config.backgroundColor
     }
 
     /// Maps the AWS detector failure to a [LivenessError] with a friendly

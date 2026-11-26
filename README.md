@@ -34,11 +34,11 @@ In Xcode: **File ▸ Add Package Dependencies…** and enter:
 https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git
 ```
 
-selecting **Up to Next Major Version** from `1.8.0`. Or in `Package.swift`:
+selecting **Up to Next Major Version** from `1.9.0`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git", from: "1.8.0")
+    .package(url: "https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git", from: "1.9.0")
 ],
 targets: [
     .target(
@@ -210,12 +210,42 @@ case .failure(let error):
 
 ### `LivenessUIConfig`
 
+The same fields, defaults and behaviour exist in the Android SDK; [CONTRACT.md](CONTRACT.md) is the shared reference.
+
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
 | `hideBranding` | `Bool` | `false` | Hide the "Powered by SourceID" footer |
-| `customTitle` | `String?` | `nil` | Title shown above the camera view (omitted when `nil`) |
-| `theme` | `String` | `"light"` | `"light"` or `"dark"` |
-| `primaryColorHex` | `String?` | `nil` | Accent color, e.g. `"#0A84FF"` (falls back to theme default when nil/invalid) |
+| `customTitle` | `String?` | `nil` | Title above the camera and on the start page (omitted above the camera when `nil`) |
+| `theme` | `String` | `"light"` | `"light"` or `"dark"`: the base palette every colour falls back to |
+| `primaryColorHex` | `String?` | `nil` | Shorthand for `colors.primary` |
+| `showStartPage` | `Bool` | `true` | Show the SourceID instruction page before the camera. Set `false` when your app has its own intro, and include a photosensitivity notice there: the check flashes colours on screen |
+| `hideCancelButton` | `Bool` | `false` | Hide AWS's close button during capture. Only when your app offers another way out |
+| `colors` | `LivenessColors` | all `nil` | `primary`, `onPrimary`, `background`, `onBackground`, `surface`, `error`, `onError`, `errorContainer`, `onErrorContainer`, each `"#RRGGBB"` |
+| `fonts` | `LivenessFonts` | all `nil` | `regular`, `medium`, `bold`: PostScript names of fonts your app registers (for example under `UIAppFonts`) |
+
+Colours and fonts style the SourceID screens and the AWS detector together. They cannot change the oval outline, the white overlay around the oval during the check, the oval geometry or the flashing colours; those are fixed by AWS.
+
+```swift
+let config = LivenessUIConfig(
+    hideBranding: true,
+    theme: "dark",
+    showStartPage: false,
+    colors: LivenessColors(
+        primary: "#AA2236",
+        onPrimary: "#FFFFFF",
+        background: "#0C1F1A",
+        onBackground: "#FFFFFF"
+    ),
+    fonts: LivenessFonts(regular: "Exo2-Regular", medium: "Exo2-Medium", bold: "Exo2-Bold")
+)
+```
+
+### Text and translations
+
+Every visible string can be replaced or translated without code: add a `Localizable.strings` to your app (for example `ar.lproj/Localizable.strings`) with the same keys.
+
+- AWS detector text uses keys starting `amplify_ui_liveness_`, for example `amplify_ui_liveness_challenge_instruction_hold_still`.
+- SourceID text uses keys starting `sid_liveness_`: `sid_liveness_start_title`, `sid_liveness_start_intro`, `sid_liveness_start_guidelines_intro`, `sid_liveness_start_guideline_light`, `sid_liveness_start_guideline_center`, `sid_liveness_start_guideline_coverings`, `sid_liveness_start_guideline_photosensitivity`, `sid_liveness_start_guideline_retries`, `sid_liveness_start_guideline_ready`, `sid_liveness_start_button`, `sid_liveness_powered_by`.
 
 ---
 
@@ -236,8 +266,8 @@ Releases are consumed straight from git tags via Swift Package Manager:
 ```bash
 # verify it builds first
 xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' build
-git tag 1.8.0
-git push origin 1.8.0                # or the appropriate remote
+git tag 1.9.0
+git push origin 1.9.0                # or the appropriate remote
 ```
 
 ---
