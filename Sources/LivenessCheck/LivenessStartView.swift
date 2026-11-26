@@ -5,38 +5,37 @@
 
 import SwiftUI
 
-private let guidelines = [
-    "Use a well-lit space with even lighting, avoid very dark or overly bright areas.",
-    "Keep your head centered and follow prompts.",
-    "Remove any head coverings which may be obstructing your face.",
-    "After 5 fails, apply a 30-60 minute timeout.",
-    "When you're ready, tap Start."
-]
+/// Start-page guidelines. Keys are shared with Android (CONTRACT.md); a host
+/// `Localizable.strings` with the same key replaces or translates the text.
+private var guidelines: [String] {
+    [
+        sidLocalized("sid_liveness_start_guideline_light", "Use a well-lit space with even lighting, avoid very dark or overly bright areas."),
+        sidLocalized("sid_liveness_start_guideline_center", "Keep your head centered and follow prompts."),
+        sidLocalized("sid_liveness_start_guideline_coverings", "Remove any head coverings which may be obstructing your face."),
+        sidLocalized("sid_liveness_start_guideline_photosensitivity", "The check flashes a sequence of colours on screen. Take care if you are sensitive to flashing light."),
+        sidLocalized("sid_liveness_start_guideline_retries", "After 5 fails, apply a 30-60 minute timeout."),
+        sidLocalized("sid_liveness_start_guideline_ready", "When you're ready, tap Start."),
+    ]
+}
 
 /// Instruction page shown before the capture flow starts, mirroring the
-/// SourceID web liveness start page.
+/// SourceID web liveness start page. Hidden with `showStartPage = false`.
 struct LivenessStartView: View {
     let config: LivenessUIConfig
     let onStart: () -> Void
-
-    private var isDark: Bool { config.theme.lowercased() == "dark" }
-    private var textColor: Color { isDark ? .white : Color(red: 0.07, green: 0.07, blue: 0.07) }
-    private var cardBackground: Color {
-        isDark ? Color.white.opacity(0.08) : Color(red: 0.96, green: 0.95, blue: 0.98)
-    }
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
-                    Text(config.customTitle ?? "Liveness Check")
-                        .font(.largeTitle.bold())
-                        .foregroundColor(textColor)
+                    Text(config.customTitle ?? sidLocalized("sid_liveness_start_title", "Liveness Check"))
+                        .font(config.font(.largeTitle, .bold))
+                        .foregroundColor(config.textColor)
                         .multilineTextAlignment(.center)
 
-                    Text("We need to verify you are a real person for security purposes.")
-                        .font(.body)
-                        .foregroundColor(textColor)
+                    Text(sidLocalized("sid_liveness_start_intro", "We need to verify you are a real person for security purposes."))
+                        .font(config.font(.body, .regular))
+                        .foregroundColor(config.textColor)
                         .multilineTextAlignment(.center)
                         .padding(.top, 48)
 
@@ -45,19 +44,23 @@ struct LivenessStartView: View {
                         .padding(.top, 32)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Your face needs to be verified against your information. Please follow the guidelines below to ensure proper capture:")
-                            .font(.subheadline)
-                            .foregroundColor(textColor)
+                        Text(sidLocalized("sid_liveness_start_guidelines_intro", "Your face needs to be verified against your information. Please follow the guidelines below to ensure proper capture:"))
+                            .font(config.font(.subheadline, .regular))
+                            .foregroundColor(config.textColor)
                         ForEach(guidelines, id: \.self) { line in
-                            Text("- \(line)")
-                                .font(.footnote)
-                                .foregroundColor(textColor)
-                                .padding(.vertical, 2)
+                            // A separate bullet keeps it at the leading edge in right-to-left languages.
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text(verbatim: "•")
+                                Text(line)
+                            }
+                            .font(config.font(.footnote, .regular))
+                            .foregroundColor(config.textColor)
+                            .padding(.vertical, 2)
                         }
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(cardBackground))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(config.surfaceColor))
                     .padding(.top, 32)
                 }
                 .padding(.horizontal, 24)
@@ -65,8 +68,9 @@ struct LivenessStartView: View {
             }
 
             Button(action: onStart) {
-                Text("Start Liveness Check")
-                    .foregroundColor(.white)
+                Text(sidLocalized("sid_liveness_start_button", "Start Liveness Check"))
+                    .font(config.font(.body, .medium))
+                    .foregroundColor(config.onPrimaryColor)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .background(RoundedRectangle(cornerRadius: 8).fill(config.getPrimaryColor()))
@@ -74,7 +78,7 @@ struct LivenessStartView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
         }
-        .background((isDark ? Color.black : Color.white).ignoresSafeArea())
+        .background(config.backgroundColor.ignoresSafeArea())
     }
 }
 

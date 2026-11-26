@@ -16,7 +16,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/aws-amplify/amplify-ui-swift-liveness.git",
-            from: "1.4.2"
+            from: "1.6.0"
         ),
         // Force a newer version of swift-log that's compatible with Swift 5.9
               .package(

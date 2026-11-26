@@ -34,11 +34,11 @@ In Xcode: **File ▸ Add Package Dependencies…** and enter:
 https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git
 ```
 
-selecting **Up to Next Major Version** from `1.8.0`. Or in `Package.swift`:
+selecting **Up to Next Major Version** from `1.9.0`. Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git", from: "1.8.0")
+    .package(url: "https://github.com/sourceidtechorg/sid-liveness-sdk-ios.git", from: "1.9.0")
 ],
 targets: [
     .target(
@@ -51,6 +51,18 @@ targets: [
 ```
 
 > **Note:** [`sourceidtechorg/sid-liveness-sdk-ios`](https://github.com/sourceidtechorg/sid-liveness-sdk-ios) is the official repository. The historical `EQua-Dev/ios-single-liveness-expo` URL still resolves for existing consumers, but new integrations should use the URL above (the `package:` identity differs between the two, so pick one and stay consistent).
+
+### Approving AWS's build plugin (one time per machine)
+
+Since 1.9.0 the SDK uses AWS Amplify liveness 1.6.0, whose AWS SDK generates code at build time with the `SmithyCodeGeneratorPlugin` from `smithy-swift`. Xcode asks you to approve it once:
+
+1. The first build fails with *Plugin "SmithyCodeGeneratorPlugin" from package "smithy-swift" must be enabled before it can be used*.
+2. Open the Issue navigator (⌘5), click that error and choose **Trust & Enable**.
+3. If the next build reports *Build input files cannot be found … BuildToolPluginIntermediates*, choose **Product ▸ Clean Build Folder** and build again.
+
+Command-line and CI builds cannot show the prompt. Pass `-skipPackagePluginValidation` to `xcodebuild`, or on a CI machine run `defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES` (Apple's key name is spelled that way).
+
+There is no way to avoid the plugin: every AWS Amplify liveness release with theming requires an AWS SDK version that uses it.
 
 ### CocoaPods
 
@@ -210,12 +222,42 @@ case .failure(let error):
 
 ### `LivenessUIConfig`
 
+The same fields, defaults and behaviour exist in the Android SDK; [CONTRACT.md](CONTRACT.md) is the shared reference.
+
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
 | `hideBranding` | `Bool` | `false` | Hide the "Powered by SourceID" footer |
-| `customTitle` | `String?` | `nil` | Title shown above the camera view (omitted when `nil`) |
-| `theme` | `String` | `"light"` | `"light"` or `"dark"` |
-| `primaryColorHex` | `String?` | `nil` | Accent color, e.g. `"#0A84FF"` (falls back to theme default when nil/invalid) |
+| `customTitle` | `String?` | `nil` | Title above the camera and on the start page (omitted above the camera when `nil`) |
+| `theme` | `String` | `"light"` | `"light"` or `"dark"`: the base palette every colour falls back to |
+| `primaryColorHex` | `String?` | `nil` | Shorthand for `colors.primary` |
+| `showStartPage` | `Bool` | `true` | Show the SourceID instruction page before the camera. Set `false` when your app has its own intro, and include a photosensitivity notice there: the check flashes colours on screen |
+| `hideCancelButton` | `Bool` | `false` | Hide AWS's close button during capture. Only when your app offers another way out |
+| `colors` | `LivenessColors` | all `nil` | `primary`, `onPrimary`, `background`, `onBackground`, `surface`, `error`, `onError`, `errorContainer`, `onErrorContainer`, each `"#RRGGBB"` |
+| `fonts` | `LivenessFonts` | all `nil` | `regular`, `medium`, `bold`: PostScript names of fonts your app registers (for example under `UIAppFonts`) |
+
+Colours and fonts style the SourceID screens and the AWS detector together. They cannot change the oval outline, the white overlay around the oval during the check, the oval geometry or the flashing colours; those are fixed by AWS.
+
+```swift
+let config = LivenessUIConfig(
+    hideBranding: true,
+    theme: "dark",
+    showStartPage: false,
+    colors: LivenessColors(
+        primary: "#AA2236",
+        onPrimary: "#FFFFFF",
+        background: "#0C1F1A",
+        onBackground: "#FFFFFF"
+    ),
+    fonts: LivenessFonts(regular: "Exo2-Regular", medium: "Exo2-Medium", bold: "Exo2-Bold")
+)
+```
+
+### Text and translations
+
+Every visible string can be replaced or translated without code: add a `Localizable.strings` to your app (for example `ar.lproj/Localizable.strings`) with the same keys.
+
+- AWS detector text uses keys starting `amplify_ui_liveness_`, for example `amplify_ui_liveness_challenge_instruction_hold_still`.
+- SourceID text uses keys starting `sid_liveness_`: `sid_liveness_start_title`, `sid_liveness_start_intro`, `sid_liveness_start_guidelines_intro`, `sid_liveness_start_guideline_light`, `sid_liveness_start_guideline_center`, `sid_liveness_start_guideline_coverings`, `sid_liveness_start_guideline_photosensitivity`, `sid_liveness_start_guideline_retries`, `sid_liveness_start_guideline_ready`, `sid_liveness_start_button`, `sid_liveness_powered_by`.
 
 ---
 
@@ -235,9 +277,9 @@ Releases are consumed straight from git tags via Swift Package Manager:
 
 ```bash
 # verify it builds first
-xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' build
-git tag 1.8.0
-git push origin 1.8.0                # or the appropriate remote
+xcodebuild -scheme LivenessCheck -destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation build
+git tag 1.9.0
+git push origin 1.9.0                # or the appropriate remote
 ```
 
 ---
